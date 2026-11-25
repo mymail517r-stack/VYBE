@@ -131,8 +131,8 @@ export const STORAGE_KEYS = {
    user: "rheoson-user"
 } as const;
 
-export const APP_NAME = "Rheoson";
-export const APP_SLOGAN = "Feel the Beat";
+export const APP_NAME = "VYBE";
+export const APP_SLOGAN = "Your music. Your vibe.";
 export const APP_VERSION = "2.23.3";
 
 // ── Clerk ────────────────────────────────────────────────────

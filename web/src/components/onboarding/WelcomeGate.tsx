@@ -33,20 +33,20 @@ export default function WelcomeGate({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="relative h-full min-h-screen w-full overflow-hidden bg-black">
+    <div className="relative flex min-h-[100svh] w-full flex-col overflow-x-hidden overflow-y-auto bg-black [touch-action:pan-y]">
       {/* Placeholder artwork — swap /welcome-listening.svg for a photo any time. */}
       <img
         src="/welcome-listening.svg"
         alt="Someone with headphones, eyes closed, listening to music"
-        className="absolute inset-0 h-full w-full object-cover"
+        className="pointer-events-none fixed inset-0 h-full w-full object-cover"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" aria-hidden />
+      <div className="pointer-events-none fixed inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" aria-hidden />
 
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
-        className="absolute inset-x-0 bottom-0 px-6 pb-[max(32px,env(safe-area-inset-bottom))]"
+        className="relative z-10 mt-auto w-full px-6 pt-[45svh] pb-[max(48px,calc(env(safe-area-inset-bottom)+24px))]"
       >
         <h1 className="max-w-[16ch] text-left text-[32px] font-black leading-[1.1] tracking-tight text-white">
           Let your ears listen to the music they deserve
