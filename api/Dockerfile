@@ -29,6 +29,9 @@ FROM python:3.13-slim
 # ffmpeg is needed at runtime by yt-dlp for audio conversion.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
+    curl \
+    unzip \
+    && DENO_INSTALL=/usr/local sh -c "curl -fsSL https://deno.land/install.sh | sh" \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy installed packages from the builder stage only — no compilers
