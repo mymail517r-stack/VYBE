@@ -966,8 +966,13 @@ async def _fill_buffer_ytdlp(track_id: str, dest: Path, on_mime=None) -> str:
     # Audio-only, m4a first — identical on every host, with or without ffmpeg.
     base_cmd = [
         toolchain.ytdlp_bin(), "--quiet", "--no-warnings", "--no-playlist",
+        "--socket-timeout", str(stream_service.YTDLP_SOCKET_TIMEOUT),
+        "--retries", "1", "--extractor-retries", "1",
         "--format", stream_service.RAW_AUDIO_SELECTOR, "-o", "-",
     ]
+    deno_path = shutil.which("deno")
+    if deno_path:
+        base_cmd += ["--js-runtimes", f"deno:{deno_path}"]
 
     for attempt in range(3):
         extractor_args = extractor_args_variants[min(attempt, len(extractor_args_variants) - 1)]
@@ -992,12 +997,16 @@ async def _fill_buffer_ytdlp(track_id: str, dest: Path, on_mime=None) -> str:
 
         # Spawn timeout — wait for first bytes from yt-dlp
         try:
-            first_chunk = await asyncio.wait_for(proc.stdout.read(CHUNK), timeout=30.0)
+            first_chunk = await asyncio.wait_for(proc.stdout.read(CHUNK), timeout=60.0)
         except asyncio.TimeoutError:
             log.warning("stream.buffer.spawn_timeout", track_id=track_id)
             try:
                 proc.kill()
             except Exception:
+                pass
+            try:
+                await asyncio.wait_for(proc.wait(), timeout=5.0)
+            except asyncio.TimeoutError:
                 pass
             await asyncio.sleep(0.8 + attempt * 0.5)
             continue

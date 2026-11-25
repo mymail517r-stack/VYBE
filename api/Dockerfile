@@ -32,7 +32,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     unzip \
     && DENO_INSTALL=/usr/local sh -c "curl -fsSL https://deno.land/install.sh | sh" \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && command -v deno \
+    && deno --version
 
 # Copy installed packages from the builder stage only — no compilers
 # or build tools make it into the final image, keeping it smaller.

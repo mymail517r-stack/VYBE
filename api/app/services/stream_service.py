@@ -22,6 +22,7 @@ from __future__ import annotations
 import asyncio
 import os
 import time
+import shutil
 from pathlib import Path
 from typing import AsyncIterator, Optional
 from urllib.parse import parse_qs, unquote, urlparse
@@ -160,7 +161,8 @@ DIRECT_URL_TTL = 4 * 60 * 60
 
 #: How long a single `yt-dlp -g` extraction may take before we give up on the
 #: fast path and let the yt-dlp buffer fallback handle the track.
-RESOLVE_TIMEOUT = 25.0
+RESOLVE_TIMEOUT = float(os.environ.get("STREAM_RESOLVE_TIMEOUT", "60"))
+YTDLP_SOCKET_TIMEOUT = int(os.environ.get("STREAM_YTDLP_SOCKET_TIMEOUT", "12"))
 
 UA_ANDROID = (
     "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 "
@@ -222,8 +224,15 @@ def resolve_direct_url_sync(track_id: str) -> Optional[str]:
     for extractor_args in client_attempts():
         cmd = [
             toolchain.ytdlp_bin(), "--quiet", "--no-warnings", "--no-playlist",
+            "--socket-timeout", str(YTDLP_SOCKET_TIMEOUT),
+            "--retries", "1", "--extractor-retries", "1",
             "-f", FORMAT_SELECTOR, "-g",
         ]
+        # Deno is installed in the production Docker image. Pass its resolved
+        # path explicitly so yt-dlp does not depend on a service-specific PATH.
+        deno_path = shutil.which("deno")
+        if deno_path:
+            cmd += ["--js-runtimes", f"deno:{deno_path}"]
         for arg in extractor_args:
             cmd += ["--extractor-args", arg]
         cmd += ["--add-header", f"User-Agent:{UA_DESKTOP}", yt_url]
@@ -232,6 +241,17 @@ def resolve_direct_url_sync(track_id: str) -> Optional[str]:
             proc = subprocess.run(
                 cmd, capture_output=True, timeout=RESOLVE_TIMEOUT, check=False
             )
+        except subprocess.TimeoutExpired as e:
+            partial = e.stderr or b""
+            if isinstance(partial, bytes):
+                partial = partial.decode("utf-8", "replace")
+            log.warning(
+                "stream.resolve.timeout",
+                track_id=track_id,
+                timeout_s=RESOLVE_TIMEOUT,
+                stderr=str(partial)[-500:],
+            )
+            continue
         except Exception as e:  # noqa: BLE001 — any failure means "try next"
             log.warning("stream.resolve.spawn_failed", track_id=track_id, error=str(e))
             continue
